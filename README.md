@@ -121,6 +121,6 @@ so I will be using that.
 Connecting to KE6JJJ-1 is just a single command:  
 `connect direwolf KE6JJJ-1`  
 The BBS returns with a welcome message and a basic help command. JNOS will not
-give a prompt the user to input the next command; when the BBS is finished
+prompt the user to input the next command; when the BBS is finished
 transmitting, the cursor should be on a new blank line; simply enter the next
 command and press <Enter>.
