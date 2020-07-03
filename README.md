@@ -76,6 +76,21 @@ for convenience and in case the site is removed:
 
 [tuncreate.c](tuncreate.c)
 
+#### UPDATE:
+
+This method is now obsolete and replaced with the `ip` command to
+create/destroy a tunnel. This command is included out-of-the-box since kernel
+2.2. This avoids the use of a custom program and does not need a C compiler. To
+set up the tunnel, run:  
+`sudo ip tuntap add dev <TUN_IFACE> mode tun user <USER>`
+
+Now that the tunnel has been created, set parameters:  
+`sudo ifconfig <TUN_IFACE> <HOST_IP> pointopoint <JNOS_IP> mtu 1500 up`  
+NOTE: the tunnel type is `pointopoint`, not `pointtopoint`!
+
+To delete the tunnel when finished, use:  
+`ip tuntap del dev <TUN_IFACE> mode tun`
+
 To use this tunnel, patch JNOS to allow an additional device name in its `attach` command:
 
 [patch_tun_exist.diff](patch_tun_exist.diff)
