@@ -8,6 +8,10 @@ specific to linux, although the flavor shouldn't matter. No AX.25 kmods,
 drivers or utilities are required for this setup as AX.25 is handled by
 Direwolf.
 
+### TODO
+
+- Figure out attaching a KISS TNC in JNOS
+
 
 ## Hardware
 
@@ -53,23 +57,7 @@ Direwolf is generally easy to set up. Below is the `direwolf.conf` I use for
 BBS and APRS. The important part for now is to enable the AGWPE port (default
 is 8000).
 
-```yaml
-# Direwolf config
-# Audio device
-ADEVICE XON_736
-# Number of channels
-ACHANNELS 1
-# Choose specific channel
-CHANNEL 0
-# Callsign for digipeater/KISS
-MYCALL N0CALL-3
-# Over-the-air baud rate
-MODEM 1200
-# Rig PTT control (if audio interface does not include PTT/VOX)
-PTT RIG 4 localhost:12345
-# Enable AGWPE protocol and place at port 8000
-AGWPORT 8000
-```
+[direwolf.conf](direwolf.conf)
 
 
 ### IP tunnel
@@ -86,98 +74,11 @@ extremely convenient and easy way to configure a tunnel before running JNOS.
 Source from [KB8OJH](https://kb8ojh.net/packet/jnos.html) and reprinted here
 for convenience and in case the site is removed:
 
-```c
-/* Copyright (c) 2011 Ethan Blanton */
-/*
- * To compile this program, execute:
-*
-*     gcc -o tuncreate tuncreate.c
-*
-* To create a tun device, execute it as:
-*
-*     sudo tuncreate <device> <user>
-*
-* Where <device> is the network device name to be created, and <user>
-* is a non-root username which should have access to the device. For
-* example, to create a tun device tun0 which may be manipulated by
-* user elb:
-*
-*      sudo tuncreate tun0 elb
-*/
-
-#include <stdio.h>
-#include <fcntl.h>
-#include <string.h>
-
-#include <sys/types.h>
-#include <pwd.h>
-
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <linux/if_tun.h>
-
-int main(int argc, char *argv[]) {
-	struct ifreq ifr;
-	struct passwd *pwent;
-	int fd;
-
-	if (argc != 3) {
-		fprintf(stderr, "usage: %s <device> <user>\n", argv[0]);
-		return -1;
-	}
-
-	if ((pwent = getpwnam(argv[2])) == NULL) {
-		perror("Could not find user");
-		return -1;
-	}
-
-	if ((fd = open("/dev/net/tun", O_RDWR)) < 0) {
-		perror("Could not open tun control device");
-		return -1;
-	}
-
-	memset(&ifr, 0, sizeof(ifr));
-	ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
-	strncpy(ifr.ifr_name, argv[1], IFNAMSIZ);
-
-	if (ioctl(fd, TUNSETIFF, (void *)&ifr) < 0) {
-		perror("Could not configure device");
-		return -1;
-	}
-
-	if (ioctl(fd, TUNSETPERSIST, 1) < 0) {
-		perror("Could not set device persistent");
-		return -1;
-	}
-
-	if (ioctl(fd, TUNSETOWNER, pwent->pw_uid) < 0) {
-		perror("Could not set device owner");
-		return -1;
-	}
-
-	return 0;
-}
-```
+[tuncreate.c](tuncreate.c)
 
 To use this tunnel, patch JNOS to allow an additional device name in its `attach` command:
-```diff
-# HG changeset patch
-# Parent 036804c141a8e237d697b475ce8d57022f2d3396
-Allow creation of tun interface on existing tun device
 
-diff -r 036804c141a8 config.c
---- a/config.c	Sat Mar 12 17:22:04 2011 -0500
-+++ b/config.c	Sat Mar 12 17:24:08 2011 -0500
-@@ -985,7 +985,7 @@
- 
- #ifdef	TUN
- 	{ "tun", tun_attach, 0, 3,
--	"attach tun <name> <mtu> <devid>" },
-+	"attach tun <name> <mtu> <devid> [devname]" },
- #endif
- 
- #ifdef BAYCOM_SER_FDX
-```
+[patch_tun_exist.diff](patch_tun_exist.diff)
 
 
 ### JNOS
@@ -197,7 +98,7 @@ In basic steps:
 - Attach an AGWPE connection. This will be the RF connection.
 - Start JNOS's ax25 engine
 
-These variables are examples in the following configuration file:
+These variables are examples for the following configuration file:
 
 | VAR          | Example Data |
 | :--          | :--          |
@@ -206,48 +107,10 @@ These variables are examples in the following configuration file:
 | DW_HOST_PORT | 8000         |
 | TUN_IFACE    | tun0         |
 
-```
-# autoexec.nos
+Note: TUN_IFACE is the name of the interface you made with `sudo tuncreate
+<TUN_IFACE> <USER>`.
 
-# Enable JNOS to log events to dated files in /jnos/logs directory
-log on
-
-# Hostname and default ax25 call
-hostname MYCALL-SSID
-ax25 mycall MYCALL-SSID
-
-# Maximize TCP performance for standard LAN having MTU 1500
-tcp mss 1460
-tcp window 5840
-
-tcp maxwait 30000
-tcp retries 5
-
-ip address JNOS_IP
-
-# Create a network interface. This allows us to talk to the linux
-# box on which JNOS is running - and in turn - to the internet.
-# This `ifconfig` refers to JNOS's internal `ifconfig`, not linux!
-# Usage: attach tun <name> <mtu> <devid> [devname]
-attach tun linux 1500 0 TUN_IFACE
-ifconfig linux ipaddress JNOS_IP
-ifconfig linux netmask 255.255.255.0
-ifconfig linux mtu 1500
-
-# Give it a chance to come up
-pause 1
-# Attach to direwolf through IP tunnel
-# Usage: attach agwpe <name> <hostname> <port>
-attach agwpe direwolf HOST_IP DW_HOST_PORT
-
-# Beacon out the RF port every 10 minutes
-# ax25 bctext "internet gateway"
-# ax25 bcinterval 600
-# ax25 bc direwolf
-
-# Start the engine
-start ax25
-```
+[autoexec.nos](autoexec.nos)
 
 ## Connect to a BBS
 

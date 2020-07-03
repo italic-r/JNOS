@@ -1,0 +1,34 @@
+# autoexec.nos
+
+# Enable JNOS to log events to dated files in /jnos/logs directory
+log on
+
+# Hostname and default ax25 call
+hostname MYCALL-SSID
+ax25 mycall MYCALL-SSID
+
+# Maximize TCP performance for standard LAN having MTU 1500
+tcp mss 1460
+tcp window 5840
+
+tcp maxwait 30000
+tcp retries 5
+
+ip address JNOS_IP
+
+# Create a network interface. This allows us to talk to the linux
+# box on which JNOS is running - and in turn - to the internet.
+# This `ifconfig` refers to JNOS's internal `ifconfig`, not linux!
+# Usage: attach tun <name> <mtu> <devid> [devname]
+attach tun linux 1500 0 TUN_IFACE
+ifconfig linux ipaddress JNOS_IP
+ifconfig linux netmask 255.255.255.0
+ifconfig linux mtu 1500
+pause 1
+
+# Attach to direwolf through IP tunnel
+# Usage: attach agwpe <name> <hostname> <port>
+attach agwpe direwolf HOST_IP DW_HOST_PORT
+
+# Start the engine
+start ax25

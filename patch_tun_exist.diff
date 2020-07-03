@@ -1,0 +1,16 @@
+# HG changeset patch
+# Parent 036804c141a8e237d697b475ce8d57022f2d3396
+Allow creation of tun interface on existing tun device
+
+diff -r 036804c141a8 config.c
+--- a/config.c	Sat Mar 12 17:22:04 2011 -0500
++++ b/config.c	Sat Mar 12 17:24:08 2011 -0500
+@@ -985,7 +985,7 @@
+ 
+ #ifdef	TUN
+ 	{ "tun", tun_attach, 0, 3,
+-	"attach tun <name> <mtu> <devid>" },
++	"attach tun <name> <mtu> <devid> [devname]" },
+ #endif
+ 
+ #ifdef BAYCOM_SER_FDX
