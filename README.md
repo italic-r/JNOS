@@ -69,19 +69,21 @@ this basic setup, it will only communicate with Direwolf through the AGWPE
 port, but JNOS is also able to communicate with the internet through this
 tunnel.
 
-Create a tunnel from HOST_IP to JNOS_IP in point-to-point mode. This is an
-extremely convenient and easy way to configure a tunnel before running JNOS.
-Source from [KB8OJH](https://kb8ojh.net/packet/jnos.html) and reprinted here
-for convenience and in case the site is removed:
+Create a tunnel from HOST_IP to JNOS_IP in point-to-point mode.
 
-[tuncreate.c](tuncreate.c)
+~~There is an extremely convenient and easy way to configure a tunnel before
+running JNOS with a custom program from
+[KB8OJH](https://kb8ojh.net/packet/jnos.html),
+reprinted here for convenience and in case the site is removed:~~
+
+~~[tuncreate.c](tuncreate.c)~~
 
 #### UPDATE:
 
-This method is now obsolete and replaced with the `ip` command to
-create/destroy a tunnel. This command is included out-of-the-box since kernel
-2.2. This avoids the use of a custom program and does not need a C compiler. To
-set up the tunnel, run:  
+Using `ifconfig` to create the tunnel is now obsolete and replaced with the
+`ip` command to create/destroy a tunnel. This command is included out of the
+box since kernel 2.2. This avoids the use of a custom program and does not need
+a C compiler. To set up the tunnel, run:  
 `sudo ip tuntap add dev <TUN_IFACE> mode tun user <USER>`
 
 Now that the tunnel has been created, set parameters:  
