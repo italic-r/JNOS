@@ -91,6 +91,9 @@ NOTE: the tunnel type is `pointopoint`, not `pointtopoint`!
 To delete the tunnel when finished, use:  
 `ip tuntap del dev <TUN_IFACE> mode tun`
 
+**\/UPDATE**
+
+
 To use this tunnel, patch JNOS to allow an additional device name in its `attach` command:
 
 [patch_tun_exist.diff](patch_tun_exist.diff)
